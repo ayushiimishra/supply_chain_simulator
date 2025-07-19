@@ -1,0 +1,6 @@
+SKU,Location,Total Lost Sales,Mean Stock Level,Disruption Weeks
+SKU0,Mumbai,674,0.0,2
+SKU1,Mumbai,678,0.0,3
+SKU2,Mumbai,18,20.0,2
+SKU3,Kolkata,62,2.25,0
+SKU4,Delhi,545,0.0,0
