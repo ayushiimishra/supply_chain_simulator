@@ -2,3 +2,6 @@ pandas
 numpy
 matplotlib
 networkx
+plotly
+streamlit
+altair
