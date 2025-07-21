@@ -5,3 +5,6 @@ networkx
 plotly
 streamlit
 altair
+pyvis
+seaborn
+pulp
