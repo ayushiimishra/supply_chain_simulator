@@ -7,22 +7,22 @@ import altair as alt
 import os
 from pyvis.network import Network
 import streamlit.components.v1 as components
+
 from simulation import multi_sku_simulation, compute_weekly_kpis, build_supply_chain_graph
 
 # --- DEMO/DEFAULT FILE PATH ---
-DEMO_FILE_PATH = os.path.join("data", "demo_supply_chain.csv")  # Place your demo CSV here
+DEMO_FILE_PATH = os.path.join("data", "demo_supply_chain.csv") # Place your demo CSV here
 
 st.set_page_config(page_title="Supply Chain Simulation - Advanced", layout="wide")
 st.title("📊 Supply Chain Resilience Dashboard")
 st.markdown(
     '''
-Upload your own **supply_chain_data.csv** or use the **demo** dataset below.  
-The dashboard works instantly out of the box for demos and learning.
-''',
-    unsafe_allow_html=True
+    Upload your own **supply_chain_data.csv** or use the **demo** dataset below. 
+    The dashboard works instantly out of the box for demos and learning.
+    ''', unsafe_allow_html=True
 )
 
-# ---- Robust Demo + Upload Logic (Unambiguous/Non-duplicated) ----
+# ---- Robust Demo + Upload Logic ----
 uploaded_file = st.file_uploader("Upload your supply_chain_data.csv", type=["csv"])
 df = None
 src_file = ""
@@ -64,10 +64,12 @@ custom_duration = st.sidebar.slider("Shock Duration (weeks)", 1, 8, 2)
 custom_week = st.sidebar.number_input("Shock starts at week (1-indexed)", 1, weeks, 2)
 apply_custom_shock = st.sidebar.checkbox("Simulate with custom shock on a plant", False)
 user_seed = st.sidebar.number_input("Random Seed", min_value=0, value=42, step=1)
-
 st.markdown("---")
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📈 KPI Dashboard", "🔗 Network Graph", "🧮 Scenario Comparison", "📊 Cost vs Resilience"
+    "📈 KPI Dashboard",
+    "🔗 Network Graph",
+    "🧮 Scenario Comparison",
+    "📊 Cost vs Resilience"
 ])
 
 def make_shock_dict(week, shock_type, target, severity, duration):
@@ -87,14 +89,16 @@ with tab1:
         G = build_supply_chain_graph(sim_df)
         # Custom shocks always as dicts
         custom_shocks = []
+        # Choose a plant if custom shock is enabled
         if apply_custom_shock and len(sim_df["Location"].unique()) > 0:
             plant_target = st.sidebar.selectbox(
-                "Plant for custom shock", list(sim_df["Location"].unique()), key="target_plant"
+                "Plant for custom shock",
+                list(sim_df["Location"].unique()),
+                key="target_plant"
             )
             custom_shocks.append(make_shock_dict(
                 custom_week, shock_type, plant_target, SEVERITY_MAP[severity_level], custom_duration
             ))
-
         # Standard random shocks (always as dicts)
         random_shocks = []
         for idx, row in sim_df.iterrows():
@@ -108,42 +112,35 @@ with tab1:
                     severity=1.0,
                     duration=length
                 ))
-
         # Unified shock logic
         active_shocks = custom_shocks if apply_custom_shock else random_shocks
 
-        results = multi_sku_simulation(
-            sim_df, G, weeks=weeks,
-            shock_params=active_shocks,
-            rerouting_enabled=rerouting_enabled, seed=int(user_seed)
+        results, avg_lost = multi_sku_simulation(
+            sim_df, G, weeks=weeks, shock_params=active_shocks, rerouting_enabled=rerouting_enabled, seed=int(user_seed)
         )
         kpi_df = compute_weekly_kpis(results, weeks=weeks)
-
         # KPI Charts
         fig1 = px.line(kpi_df, x="Week", y=["Total Fulfilled Demand", "Total Lost Demand"], title="Fulfilled vs Lost Demand", markers=True)
         st.plotly_chart(fig1, use_container_width=True)
-
         alt_chart = (alt.Chart(kpi_df).transform_fold(
             ["Total Fulfilled Demand", "Total Lost Demand"], as_=["Type", "Value"]
         ).mark_bar().encode(
-            x="Week:O", y="Value:Q",
+            x="Week:O",
+            y="Value:Q",
             color="Type:N",
             tooltip=["Type:N", "Value:Q"]
         ).properties(title="Weekly Demand: Stacked (Altair)", width=600).interactive())
         st.altair_chart(alt_chart, use_container_width=True)
-
         fig2 = px.area(kpi_df, x="Week", y=["Plant Stock Avg", "Customer Stock Avg"], title="Inventory Levels Over Time")
         st.plotly_chart(fig2, use_container_width=True)
-
         fig3 = px.bar(kpi_df, x="Week", y="% Rerouted", title="Percentage Rerouted Shipments per Week")
         st.plotly_chart(fig3, use_container_width=True)
-
         st.markdown("### KPI Data Table")
         st.dataframe(kpi_df, use_container_width=True)
 
         st.markdown(
             f"""
-            <div style="padding:10px;background:#EDF3FC;border-radius:10px;">
+            <div style="padding:10px;background:#000000;border-radius:10px;">
             <b>Summary:</b>
             <ul>
                 <li>Avg. Lost Demand: <span style="color:#ED4753;">{kpi_df['Total Lost Demand'].mean():.1f}</span></li>
@@ -195,7 +192,7 @@ with tab3:
                         week=start, shock_type="random", target=row["Location"], severity=1.0, duration=length
                     ))
             G = build_supply_chain_graph(sim_df)
-            results = multi_sku_simulation(
+            results, avg_lost = multi_sku_simulation(
                 sim_df, G, weeks=weeks, shock_params=random_shocks,
                 rerouting_enabled=rerouting_enabled, seed=int(scenario_seed)
             )
@@ -227,7 +224,7 @@ with tab4:
     G = build_supply_chain_graph(sim_df)
     for buffer in mitigation_levels:
         # Run simulation for this buffer size
-        results = multi_sku_simulation(
+        results, avg_lost = multi_sku_simulation(
             sim_df, G, weeks=weeks, shock_params=[], 
             rerouting_enabled=rerouting_enabled, seed=int(user_seed), buffer_size=buffer
         )
