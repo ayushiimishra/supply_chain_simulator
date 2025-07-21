@@ -1,81 +1,130 @@
-import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
-import os
+# Supply Chain Resilience Simulation Dashboard
 
-def build_supply_chain_graph(csv_path):
-    """
-    Reads the supply chain data and builds a directed graph.
-    """
-    df = pd.read_csv(csv_path)
-    
-    G = nx.DiGraph()
-    
-    for idx, row in df.iterrows():
-        # These variable names match your CSV file
-        supplier = row['Supplier name']
-        plant = row['Location'] 
-        warehouse = row.get('Warehouse', None) # Safely get 'Warehouse', will be None if not found
-        customer = row['Customer demographics']
-        sku = row['SKU']
-        
-        # Add nodes
-        G.add_node(supplier, node_type='supplier')
-        G.add_node(plant, node_type='plant')
-        if warehouse:
-            G.add_node(warehouse, node_type='warehouse')
-        G.add_node(customer, node_type='customer')
-        
-        # Add edges representing the flow
-        G.add_edge(supplier, plant, sku=sku)
-        if warehouse:
-            G.add_edge(plant, warehouse, sku=sku)
-            G.add_edge(warehouse, customer, sku=sku)
-        else:
-            # If no warehouse, flow is directly from plant to customer
-            G.add_edge(plant, customer, sku=sku)
-    
-    return G
+A Python/Streamlit tool for modeling, analyzing, and visualizing supply chain disruptions and mitigation strategies.
 
-def visualize_supply_chain_graph(G, output_path="supply_chain_network.png"):
-    """
-    Visualizes the supply chain network and saves it to a file.
-    """
-    plt.figure(figsize=(16, 12))
-    pos = nx.spring_layout(G, k=0.9, iterations=50) # Increased spacing
-    
-    node_types = nx.get_node_attributes(G, 'node_type')
-    colors = {'supplier': 'skyblue', 'plant': 'orange', 'warehouse': 'green', 'customer': 'red'}
-    node_color = [colors.get(node_types.get(n), 'gray') for n in G.nodes()]
-    
-    nx.draw(G, pos, with_labels=True, node_color=node_color, edge_color='gray', 
-            node_size=2000, font_size=10, font_weight='bold', arrowsize=20)
-            
-    plt.title("Supply Chain Network Visualization", size=20)
-    
-    # Save the figure instead of showing it
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    plt.close() # Close the plot to free memory
-    print(f"Graph saved to {output_path}")
+## Overview
 
-if __name__ == "__main__":
-    # --- Build a reliable path to the data file ---
-    # This assumes your script is in a 'src' folder and 'data' is a sibling folder
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
-    csv_path = os.path.join(project_root, "data", "supply_chain_data.csv")
+This project provides an interactive dashboard to simulate supply chain disruptions (such as geopolitical events, labor strikes, cyberattacks, or natural disasters), analyze lost demand and buffer impacts, and visualize network vulnerabilities. The app is ideal for practitioners, students, and analysts to explore “what-if” scenarios and resilience strategies.
 
-    try:
-        # --- 1. Build the graph ---
-        G = build_supply_chain_graph(csv_path)
-        print(f"Graph built with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
-        
-        # --- 2. Visualize the graph ---
-        # The output image will be saved in the same folder as your script
-        output_image_path = os.path.join(script_dir, "supply_chain_network.png")
-        visualize_supply_chain_graph(G, output_path=output_image_path)
-        
-    except FileNotFoundError:
-        print(f"Error: Could not find the data file at the path: {csv_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+**Features:**
+- Supply chain network modeling from CSV data
+- Simulation of custom and random multi-week disruptions (type, severity, duration)
+- Inventory, demand, sales, lost sales, and rerouting logic
+- Scenario sweeps and cost vs. resilience trade-off analysis
+- Interactive dashboards for KPI trends, risk heatmaps, live network map
+- Cloud-ready; runs fully in the cloud after deployment
+
+## Live Demo
+
+Try the dashboard online:  
+`https://your-deployed-app-link.streamlit.app`
+
+## Setup & Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/supply-chain-resilience-simulator.git
+   cd supply-chain-resilience-simulator
+   ```
+
+2. Install dependencies (recommended: use a virtual environment):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the dashboard:
+   ```bash
+   streamlit run src/streamlit_dashboard.py
+   ```
+
+4. Open in browser:  
+   Go to http://localhost:8501
+
+## How It Works
+
+- **Load Data:** Use the provided demo CSV or upload your own supply chain data.
+- **Set Simulation Parameters:** Choose disruption type, duration, severity, buffer inventory, rerouting, and other settings.
+- **Run Simulation:** Advance the network week-by-week, apply disruptions, compute demand and fulfillment flows, and log KPI results.
+- **Analyze Results:** Use dashboards for KPI trends, network structure, scenario grid, and the cost vs. resilience curve. Export results and explore optimal resilience investments.
+
+## Project Structure
+
+```
+├── data/
+│   └── demo_supply_chain.csv               # Example data file
+├── src/
+│   ├── simulation.py                       # Simulation engine
+│   ├── streamlit_dashboard.py              # Interactive dashboard
+├── requirements.txt                        # Package dependencies
+├── README.md                               # This file
+```
+
+## Sample Data Schema
+
+The dashboard accepts a CSV file with columns:
+- Supplier name
+- Location
+- Customer demographics
+- SKU
+- Production volumes
+- Number of products sold
+- Lead times
+- Stock levels
+
+For an example, see `/data/demo_supply_chain.csv`.
+
+## Deployment
+
+Deploy on Streamlit Cloud:
+- Push this repo to GitHub.
+- Go to Streamlit Cloud, select the repository and app script (`src/streamlit_dashboard.py`).
+- Deploy and share your link.
+
+## Screenshots
+
+<img width="1918" height="932" alt="image" src="https://github.com/user-attachments/assets/327996be-dff0-428a-bbf9-a7b3a6569b11" />
+<img width="1523" height="572" alt="image" src="https://github.com/user-attachments/assets/8e832236-f50d-4a3d-b4f4-f59294844a0e" />
+<img width="1518" height="627" alt="image" src="https://github.com/user-attachments/assets/b78725f2-48dd-425c-88db-47fb6b5cffdb" />
+<img width="1487" height="601" alt="image" src="https://github.com/user-attachments/assets/6dbea83e-e22e-4bfe-87c1-c209bfbe5c51" />
+<img width="1907" height="903" alt="image" src="https://github.com/user-attachments/assets/85eccf63-34bb-4f03-b5e5-3fc3a726f116" />
+<img width="1432" height="803" alt="image" src="https://github.com/user-attachments/assets/adad25b3-0f97-4b67-8e20-adc564e94461" />
+<img width="1457" height="813" alt="image" src="https://github.com/user-attachments/assets/460ae2b0-8893-47b2-9bb2-6809a4499be9" />
+<img width="1493" height="797" alt="image" src="https://github.com/user-attachments/assets/1a8aa924-2ece-4964-ad88-6948607682d9" />
+<img width="1482" height="871" alt="image" src="https://github.com/user-attachments/assets/7a10d3d8-c894-4f3b-95ff-9d933e5a93a9" />
+
+
+## Key Features
+
+- Flexible network and scenario modeling
+- Built-in disruption types: geopolitical, cyber, strike, disaster
+- User-configurable mitigation and reroute controls
+- Batch scenario/grid runner for risk assessment
+- Visualization of demand, stock, lost sales, node risk, rerouting percentage
+- Cloud- and recruiter-ready: deploys instantly via Streamlit sharing
+
+## Contributing
+
+Pull requests, bug reports, and feature suggestions are welcome.  
+Please open an issue or submit a pull request for review.
+
+## License
+
+MIT License. See the LICENSE file for details.
+
+## Author & Contact
+
+Ayushi Mishra
+Email: ayushixmishra@email.com  
+
+### Inspiration & References
+
+- FTOT-Resilience-Supply_Chain (Volpe USDOT)
+- MIT SCREAM Game
+- Streamlit
+
+Empowering transparent, interactive supply chain risk analysis for everyone.
+
+**Tip:**  
+- Replace all placeholder links and names with your real details.
+- Add screenshots for maximum impact.
+- Link your live deployed app as soon as it’s online.
