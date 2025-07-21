@@ -2,6 +2,8 @@
 
 A Python/Streamlit tool for modeling, analyzing, and visualizing supply chain disruptions and mitigation strategies.
 
+Explore the full dashboard here: https://ayushi-risksim.streamlit.app/
+
 ## Overview
 
 This project provides an interactive dashboard to simulate supply chain disruptions (such as geopolitical events, labor strikes, cyberattacks, or natural disasters), analyze lost demand and buffer impacts, and visualize network vulnerabilities. The app is ideal for practitioners, students, and analysts to explore “what-if” scenarios and resilience strategies.
